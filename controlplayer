@@ -1,0 +1,68 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class PlayerController : MonoBehaviour, IDamageable, IHealable
+{
+    public GameObject GameOver;
+    private Vector3 direction;
+    public LayerMask GroundMask;
+    public HealthBar InterfaceController;
+    public AudioClip DamageSound;
+    private PlayerMovement MyPlayerMovement;
+    private CharacterAnimation playerAnimation;
+    public Status playerStatus;
+
+    private void Start()
+    {
+        MyPlayerMovement = GetComponent<PlayerMovement>();
+        playerAnimation = GetComponent<CharacterAnimation>();
+        playerStatus = GetComponent<Status>();
+    }
+
+    void Update()
+    {
+        float axisX = Input.GetAxis("Horizontal");
+        float axisZ = Input.GetAxis("Vertical");
+
+        direction = new Vector3(axisX, 0, axisZ);
+
+        playerAnimation.Move(direction.magnitude);
+    }
+
+    void FixedUpdate()
+    {
+        MyPlayerMovement.Move(direction, playerStatus.Speed);
+        MyPlayerMovement.RotatePlayer(GroundMask);
+    }
+
+    public void TakeDamage(int damage)
+    {
+        playerStatus.Health -= damage;
+        InterfaceController.UpdateSlider();
+        AudioManager.instance.PlayOneShot(DamageSound);
+
+        if (playerStatus.Health <= 0)
+        {
+            Die();
+        }
+    }
+
+    public void Die()
+    {
+        GameOver.SetActive(true);
+        InterfaceController.GameOver();
+    }
+
+    public void Heal(int amount)
+    {
+        playerStatus.Health += amount;
+
+        if (playerStatus.Health > playerStatus.initialHealth)
+        {
+            playerStatus.Health = playerStatus.initialHealth;
+        }
+
+        InterfaceController.UpdateSlider();
+    }
+}
