@@ -1,0 +1,125 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class ZombieController : MonoBehaviour, IKillable
+{
+    public GameObject player;
+    private Status enemyStatus;
+    private CharacterMovement myCharacterMovement;
+    private CharacterAnimation enemyAnimation;
+    public AudioClip DeathSound;
+    private Vector3 RandomPosition;
+    private Vector3 direction;
+    private float WanderTimer;
+    private float WanderInterval = 4f;
+    private float MedicalKitSpawnRate = 0.1f;
+    public GameObject MedicalKitPrefab;
+    private HealthBar healthBarScript;
+    public ZombieGenerator myZombieGenerator;
+
+    void Start()
+    {
+        player = GameObject.FindWithTag("Player");
+        enemyAnimation = GetComponent<CharacterAnimation>();
+        myCharacterMovement = GetComponent<CharacterMovement>();
+        RandomizeZombies();
+        enemyStatus = GetComponent<Status>();
+        healthBarScript = GameObject.FindObjectOfType(typeof(HealthBar)) as HealthBar;
+    }
+
+    void FixedUpdate()
+    {
+        float distance = Vector3.Distance(transform.position, player.transform.position);
+
+        myCharacterMovement.Rotate(direction);
+        enemyAnimation.Move(direction.magnitude);
+
+        if (distance > 15)
+        {
+            Wander();
+        }
+        else if (distance > 2.5)
+        {
+            direction = player.transform.position - transform.position;
+
+            myCharacterMovement.Move(direction, enemyStatus.Speed);
+
+            enemyAnimation.Attack(false);
+        }
+        else
+        {
+            direction = player.transform.position - transform.position;
+
+            enemyAnimation.Attack(true);
+        }
+    }
+
+    void Wander()
+    {
+        WanderTimer -= Time.deltaTime;
+        if (WanderTimer <= 0)
+        {
+            RandomPosition = RandomizePosition();
+            WanderTimer += WanderInterval + Random.Range(-1f, 1f);
+        }
+
+        bool isClose = Vector3.Distance(transform.position, RandomPosition) <= 0.05;
+        if (!isClose)
+        {
+            direction = RandomPosition - transform.position;
+            myCharacterMovement.Move(direction, enemyStatus.Speed);
+        }
+    }
+
+    Vector3 RandomizePosition()
+    {
+        Vector3 position = Random.insideUnitSphere * 10;
+        position += transform.position;
+        position.y = transform.position.y;
+
+        return position;
+    }
+
+    void AttackPlayer()
+    {
+        int damage = Random.Range(20, 30);
+        player.GetComponent<PlayerController>().TakeDamage(damage);
+    }
+
+    void RandomizeZombies()
+    {
+        int generateZombieType = Random.Range(1, transform.childCount);
+        transform.GetChild(generateZombieType).gameObject.SetActive(true);
+    }
+
+    public void TakeDamage(int damage)
+    {
+        enemyStatus.Health -= damage;
+
+        if (enemyStatus.Health <= 0)
+        {
+            Die();
+        }
+    }
+
+    public void Die()
+    {
+        Destroy(gameObject, 2);
+        enemyAnimation.Die();
+        myCharacterMovement.Die();
+        this.enabled = false;
+        AudioManager.instance.PlayOneShot(DeathSound);
+        SpawnMedicalKit(MedicalKitSpawnRate);
+        healthBarScript.ZombieCount();
+        myZombieGenerator.DecreaseAliveZombies();
+    }
+
+    void SpawnMedicalKit(float spawnRatePercentage)
+    {
+        if (Random.value <= spawnRatePercentage)
+        {
+            Instantiate(MedicalKitPrefab, transform.position, Quaternion.identity);
+        }
+    }
+}
