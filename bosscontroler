@@ -1,0 +1,70 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.AI;
+
+public class BossController : MonoBehaviour, IKillable
+{
+    private Transform player;
+    private NavMeshAgent agent;
+    private Status bossStatus;
+    private CharacterAnimation bossAnimation;
+    private CharacterMovement bossMovement;
+
+    private void Start()
+    {
+        player = GameObject.FindWithTag("Player").transform;
+        agent = GetComponent<NavMeshAgent>();
+        bossStatus = GetComponent<Status>();
+        agent.speed = bossStatus.Speed;
+        bossAnimation = GetComponent<CharacterAnimation>();
+        bossMovement = GetComponent<CharacterMovement>();
+    }
+
+    private void Update()
+    {
+        agent.SetDestination(player.position);
+
+        bossAnimation.Move(agent.velocity.magnitude);
+
+        if (agent.hasPath == true)
+        {
+            bool isCloseToPlayer = agent.remainingDistance <= agent.stoppingDistance;
+
+            if (isCloseToPlayer)
+            {
+                bossAnimation.Attack(true);
+                Vector3 direction = player.position - transform.position;
+                bossMovement.Rotate(direction);
+            }
+            else
+            {
+                bossAnimation.Attack(false);
+            }
+        }
+    }
+
+    void AttackPlayer()
+    {
+        int damage = Random.Range(30, 40);
+        player.GetComponent<PlayerController>().TakeDamage(damage);
+    }
+
+    public void TakeDamage(int damage)
+    {
+        bossStatus.Health -= damage;
+        if (bossStatus.Health <= 0)
+        {
+            Die();
+        }
+    }
+
+    public void Die()
+    {
+        bossAnimation.Die();
+        bossMovement.Die();
+        this.enabled = false;
+        agent.enabled = false;
+        Destroy(gameObject, 2);
+    }
+}
