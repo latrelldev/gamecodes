@@ -1,0 +1,21 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class PlayerMovement : CharacterMovement
+{
+    public void RotatePlayer(LayerMask GroundMask)
+    {
+        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        Debug.DrawRay(ray.origin, ray.direction * 100, Color.red);
+        RaycastHit hit;
+
+        if (Physics.Raycast(ray, out hit, 100, GroundMask))
+        {
+            Vector3 playerAimPosition = hit.point - transform.position;
+            playerAimPosition.y = transform.position.y;
+
+            Rotate(playerAimPosition);
+        }
+    }
+}
