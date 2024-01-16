@@ -1,0 +1,73 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
+using UnityEngine.SceneManagement;
+using TMPro;
+
+public class HealthBar : MonoBehaviour
+{
+    private PlayerController playerController;
+    public Slider PlayerHealthSlider;
+    public GameObject GameOverPanel;
+    public TMP_Text SurvivalTimeText;
+    public TMP_Text MaxScoreText;
+    private float maxScoreTime;
+    private int ZombiesKilled;
+    public TMP_Text ZombiesKilledText;
+
+    void Start()
+    {
+        playerController = GameObject.FindWithTag("Player").GetComponent<PlayerController>();
+
+        PlayerHealthSlider.maxValue = playerController.playerStatus.Health;
+        UpdateSlider();
+        Time.timeScale = 1;
+        maxScoreTime = PlayerPrefs.GetFloat("maxScore");
+    }
+
+    public void UpdateSlider()
+    {
+        PlayerHealthSlider.value = playerController.playerStatus.Health;
+    }
+
+    public void ZombieCount()
+    {
+        ZombiesKilled++;
+        ZombiesKilledText.text = string.Format("x {0}", ZombiesKilled);
+    }
+
+    public void GameOver()
+    {
+        Time.timeScale = 0;
+        GameOverPanel.SetActive(true);
+
+        int minutes = (int)(Time.timeSinceLevelLoad / 60);
+        int seconds = (int)(Time.timeSinceLevelLoad % 60);
+
+        SurvivalTimeText.text = "You survived for " + minutes + "min and " + seconds + "s";
+        AdjustMaxScore(minutes, seconds);
+    }
+
+    void AdjustMaxScore(int min, int sec)
+    {
+        if (Time.timeSinceLevelLoad > maxScoreTime)
+        {
+            maxScoreTime = Time.timeSinceLevelLoad;
+            MaxScoreText.text = string.Format("Your best time was {0}min and {1}s", min, sec);
+            PlayerPrefs.SetFloat("maxScore", maxScoreTime);
+        }
+
+        if (MaxScoreText.text == "")
+        {
+            min = (int)maxScoreTime / 60;
+            sec = (int)maxScoreTime % 60;
+            MaxScoreText.text = string.Format("Your best time was {0}min and {1}s", min, sec);
+        }
+    }
+
+    public void Restart()
+    {
+        SceneManager.LoadScene("project");
+    }
+}
