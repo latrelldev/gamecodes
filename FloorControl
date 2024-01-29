@@ -1,0 +1,25 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class FloorControl : MonoBehaviour
+{
+    [SerializeField]
+    private float Speed = 10;
+    private Vector3 InitialPosition;
+    private float RealImageSize;
+
+    private void Awake()
+    {
+        InitialPosition = transform.position;
+        float ImageSize = GetComponent<SpriteRenderer>().size.x;
+        float Scale = transform.localScale.x;
+        RealImageSize = ImageSize * Scale;
+    }
+
+    void Update()
+    {
+        float displacement = Mathf.Repeat(Speed * Time.time, RealImageSize);
+        transform.position = InitialPosition + Vector3.left * displacement;
+    }
+}
